@@ -1,58 +1,73 @@
 import os
 import shutil
-import sys
+import unicodedata
+
+
+def my_normalize(s):
+    # Транслітерація кириличних символів
+    trans_table = {ord(c): None for c in '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'}
+    s = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii')
+    s = s.translate(trans_table)
+    # Заміна всіх символів, крім літер латинського алфавіту та цифр, на символ '_'
+    s = ''.join([c if c.isalnum() or c.isspace() else '_' for c in s])
+    return s
+
+
+def get_file_extension(file_name):
+    _, extension = os.path.splitext(file_name)
+    return extension[1:].upper()  # Видаляємо крапку перед розширенням
+
 
 def process_folder(folder_path):
     for root, dirs, files in os.walk(folder_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            normalized_name = normalize(file)
-            new_path = os.path.join(root, normalized_name)
-            os.rename(file_path, new_path)
+        # Ігноруємо папки archives, video, audio, documents, images
+        dirs[:] = [d for d in dirs if d.lower() not in {'archives', 'video', 'audio', 'documents', 'images'}]
 
-        
-        for dir in dirs:
-            dir_path = os.path.join(root, dir)
-            if not os.listdir(dir_path):
-                os.rmdir(dir_path)
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
 
-def sort_files(folder_path):
+            # Перейменовуємо файли та папки
+            normalized_name = my_normalize(file_name)
+            os.rename(file_path, os.path.join(root, normalized_name))
+
+            # Визначаємо розширення та обробляємо файл відповідно
+            extension = get_file_extension(normalized_name)
+            process_file(file_path, extension)
+
+
+def process_file(file_path, extension):
+    # Створюємо папки за категоріями, якщо їх не існує
+    categories = {'JPEG', 'PNG', 'JPG', 'SVG', 'AVI', 'MP4', 'MOV', 'MKV',
+                  'DOC', 'DOCX', 'TXT', 'PDF', 'XLSX', 'PPTX', 'MP3', 'OGG', 'WAV', 'AMR',
+                  'ZIP', 'GZ', 'TAR'}
+    if extension in categories:
+        category_folder = extension.lower()
+    else:
+        category_folder = 'unknown'
     
-    categories = ['images', 'documents', 'audio', 'video', 'archives']
-    for category in categories:
-        category_path = os.path.join(folder_path, category)
-        os.makedirs(category_path, exist_ok=True)
+    category_path = os.path.join(os.path.dirname(file_path), category_folder)
+    os.makedirs(category_path, exist_ok=True)
 
-    for root, dirs, files in os.walk(folder_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            file_extension = file.split('.')[-1].upper()
+    # Переміщуємо файли в категорії
+    shutil.move(file_path, os.path.join(category_path, os.path.basename(file_path)))
 
-            
-            if file_extension in ['JPEG', 'PNG', 'JPG', 'SVG']:
-                shutil.move(file_path, os.path.join(folder_path, 'images', file))
-            elif file_extension in ['DOC', 'DOCX', 'TXT', 'PDF', 'XLSX', 'PPTX']:
-                shutil.move(file_path, os.path.join(folder_path, 'documents', file))
-            elif file_extension in ['MP3', 'OGG', 'WAV', 'AMR']:
-                shutil.move(file_path, os.path.join(folder_path, 'audio', file))
-            elif file_extension in ['AVI', 'MP4', 'MOV', 'MKV']:
-                shutil.move(file_path, os.path.join(folder_path, 'video', file))
-            elif file_extension in ['ZIP', 'GZ', 'TAR']:
-                
-                archive_folder_path = os.path.join(folder_path, 'archives', file.replace('.', '_'))
-                os.makedirs(archive_folder_path, exist_ok=True)
-                shutil.unpack_archive(file_path, archive_folder_path)
-                os.remove(file_path)
 
-def main():
-    if len(sys.argv) != 2:
-        print("Usage: python sort.py <folder_path>")
-        return
+def create_backup(path):
+    archive_name = shutil.make_archive('backup_folder', 'zip', path)
+    return archive_name
 
-    folder_path = sys.argv[1]
 
-    process_folder(folder_path)
-    sort_files(folder_path)
+def unpack(archive_path, path_to_unpack):
+    shutil.unpack_archive(archive_path, path_to_unpack)
+
 
 if __name__ == "__main__":
-    main()
+    folder_path = "/user/Desktop/Мотлох"
+    process_folder(folder_path)
+
+    # Створюємо резервну копію папки
+    backup_path = create_backup(folder_path)
+    print(f"Backup created: {backup_path}")
+
+    # Розпаковуємо архів
+    unpack(backup_path + ".zip", "path_to_unpack")
