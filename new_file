@@ -1,0 +1,52 @@
+import os
+import shutil
+import unicodedata
+
+def normalize(s):
+    trans_table = {ord(c): None for c in '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'}
+    s = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii')
+    s = s.translate(trans_table)
+    s = ''.join([c if c.isalnum() or c.isspace() else '_' for c in s])
+    return s
+
+def process_folder(folder_path):
+    for root, dirs, files in os.walk(folder_path):
+        # Ігноруємо папки archives, video, audio, documents, images
+        dirs[:] = [d for d in dirs if d.lower() not in {'archives', 'video', 'audio', 'documents', 'images'}]
+
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
+
+            # Перейменовуємо файли та папки
+            normalized_name = normalize(file_name)
+            os.rename(file_path, os.path.join(root, normalized_name))
+
+            # Визначаємо розширення та обробляємо файл відповідно
+            extension = get_file_extension(normalized_name)
+            process_file(file_path, extension)
+
+def process_file(file_path, extension):
+    categories = {'JPEG', 'PNG', 'JPG', 'SVG', 'AVI', 'MP4', 'MOV', 'MKV',
+                  'DOC', 'DOCX', 'TXT', 'PDF', 'XLSX', 'PPTX', 'MP3', 'OGG', 'WAV', 'AMR',
+                  'ZIP', 'GZ', 'TAR'}
+
+    category_folder = 'unknown'
+    if extension in categories:
+        category_folder = extension.lower()
+
+    category_path = os.path.join(os.path.dirname(file_path), category_folder)
+    os.makedirs(category_path, exist_ok=True)
+
+    if category_folder == 'archives':
+        # Розпаковуємо архів та переносимо його вміст
+        shutil.unpack_archive(file_path, category_path)
+        # Видаляємо архів, якщо розпакування пройшло успішно
+        os.remove(file_path)
+    else:
+        # Переміщуємо файли в категорії (крім архівів)
+        shutil.move(file_path, os.path.join(category_path, os.path.basename(file_path)))
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python script.py /path/to/folder")
+        sys.exit(1)
