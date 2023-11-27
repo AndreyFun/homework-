@@ -1,6 +1,7 @@
 import os
 import shutil
 import unicodedata
+import sys 
 
 
 def my_normalize(s):
@@ -61,13 +62,8 @@ def unpack(archive_path, path_to_unpack):
     shutil.unpack_archive(archive_path, path_to_unpack)
 
 
+
 if __name__ == "__main__":
-    folder_path = "/user/Desktop/Мотлох"
-    process_folder(folder_path)
-
-    # Створюємо резервну копію папки
-    backup_path = create_backup(folder_path)
-    print(f"Backup created: {backup_path}")
-
-    # Розпаковуємо архів
-    unpack(backup_path + ".zip", "path_to_unpack")
+    if len(sys.argv) != 2:
+        print("Usage: python script.py /path/to/folder")
+        sys.exit(1)
