@@ -1,6 +1,7 @@
 import os
 import shutil
 import unicodedata
+import sys
 
 def normalize(s):
     trans_table = {ord(c): None for c in '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'}
@@ -49,4 +50,4 @@ def process_file(file_path, extension):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python script.py /path/to/folder")
-        sys.exit(1)
+        sys.exit(0)
