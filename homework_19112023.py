@@ -1,6 +1,30 @@
 import os
 import shutil
 import unicodedata
+from pathlib import Path
+import sys
+
+
+def main():
+    """Перевіряємо дійсність і існування шляху указаного користувачем
+        Повертаємо запуск наступної функції - cleaner.
+        root_folder - так записуємо шлях до папки котру будемо чистити та сортувати.
+    """
+    global main_folder
+
+    if len(sys.argv) < 2:
+        print('Enter path to folder which should be cleaned')
+        exit()
+
+    root_folder = Path(sys.argv[1])
+    # root_folder => Path("D:\Maya\Desktop\Хлам")
+
+    if (not root_folder.exists()) or (not root_folder.is_dir()):
+        print('Path incorrect')
+        exit()
+
+    main_folder = root_folder
+    process_folder(main_folder)
 
 
 def my_normalize(s):
@@ -44,7 +68,7 @@ def process_file(file_path, extension):
         category_folder = extension.lower()
     else:
         category_folder = 'unknown'
-    
+
     category_path = os.path.join(os.path.dirname(file_path), category_folder)
     os.makedirs(category_path, exist_ok=True)
 
@@ -52,16 +76,6 @@ def process_file(file_path, extension):
     shutil.move(file_path, os.path.join(category_path, os.path.basename(file_path)))
 
 
-def create_backup(path):
-    archive_name = shutil.make_archive('backup_folder', 'zip', path)
-    return archive_name
-
-
-def unpack(archive_path, path_to_unpack):
-    shutil.unpack_archive(archive_path, path_to_unpack)
-
-
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python script.py /path/to/folder")
-        sys.exit(1)
+    main()
+    exit()
