@@ -6,10 +6,7 @@ import sys
 
 
 def main():
-    """Перевіряємо дійсність і існування шляху указаного користувачем
-        Повертаємо запуск наступної функції - cleaner.
-        root_folder - так записуємо шлях до папки котру будемо чистити та сортувати.
-    """
+    
     global main_folder
 
     if len(sys.argv) < 2:
@@ -17,7 +14,7 @@ def main():
         exit()
 
     root_folder = Path(sys.argv[1])
-    # root_folder => Path("D:\Maya\Desktop\Хлам")
+    
 
     if (not root_folder.exists()) or (not root_folder.is_dir()):
         print('Path incorrect')
